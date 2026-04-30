@@ -1,4 +1,4 @@
-# Gemini MongoDB MCP Server
+# Antigravity MongoDB MCP Server
 
 MCP (Model Context Protocol) server that bridges AI assistants (like Gemini via Antigravity) with your MongoDB database. Supports two connection modes: **Stdio** (via file path) and **HTTP/SSE** (via `localhost:PORT`).
 
