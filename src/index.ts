@@ -1,28 +1,33 @@
-const { Server } = require("@modelcontextprotocol/sdk/server/index.js");
-const { StdioServerTransport } = require("@modelcontextprotocol/sdk/server/stdio.js");
-const { StreamableHTTPServerTransport } = require("@modelcontextprotocol/sdk/server/streamableHttp.js");
-const { isInitializeRequest } = require("@modelcontextprotocol/sdk/types.js");
-const { CallToolRequestSchema, ListToolsRequestSchema } = require("@modelcontextprotocol/sdk/types.js");
-const { MongoClient } = require("mongodb");
-const { randomUUID } = require("crypto");
-const express = require("express");
-require("dotenv").config();
+import { Server } from "@modelcontextprotocol/sdk/server/index.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import {
+    isInitializeRequest,
+    CallToolRequestSchema,
+    ListToolsRequestSchema,
+} from "@modelcontextprotocol/sdk/types.js";
+import { MongoClient } from "mongodb";
+import { randomUUID } from "node:crypto";
+import express, { type Request, type Response } from "express";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 // ==========================
 // CONFIGURATION
 // ==========================
-const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017";
-const PORT = process.env.PORT || 3000;
+const MONGO_URI: string = process.env.MONGO_URI ?? "mongodb://localhost:27017";
+const PORT: number = parseInt(process.env.PORT ?? "3000", 10);
 
 // Mode: "stdio" (default, Antigravity uses file path)
 //       "http"  (backend service, connects via localhost:PORT)
-const MCP_MODE = process.env.MCP_MODE || "stdio";
+const MCP_MODE: string = process.env.MCP_MODE ?? "stdio";
 
 const client = new MongoClient(MONGO_URI);
 let isConnected = false;
 
 // Ensure MongoDB connection is active before querying
-async function ensureConnection() {
+async function ensureConnection(): Promise<void> {
     if (!isConnected) {
         await client.connect();
         isConnected = true;
@@ -34,7 +39,7 @@ async function ensureConnection() {
 // FACTORY: Create new MCP Server instance
 // (Each HTTP session needs its own server instance)
 // ==========================
-function createMcpServer() {
+function createMcpServer(): Server {
     const server = new Server(
         { name: "mongodb-mcp-server", version: "2.0.0" },
         { capabilities: { tools: {} } }
@@ -50,32 +55,32 @@ function createMcpServer() {
                 name: "query_mongodb",
                 description: "Find documents in a MongoDB collection",
                 inputSchema: {
-                    type: "object",
+                    type: "object" as const,
                     properties: {
                         db: { type: "string" },
                         collection: { type: "string" },
                         query: { type: "object" },
                         projection: { type: "object" },
-                        limit: { type: "number", default: 10 }
+                        limit: { type: "number", default: 10 },
                     },
-                    required: ["db", "collection", "query"]
-                }
+                    required: ["db", "collection", "query"],
+                },
             },
 
             // DATABASE
             {
                 name: "list_databases",
                 description: "List all databases in MongoDB",
-                inputSchema: { type: "object", properties: {} }
+                inputSchema: { type: "object" as const, properties: {} },
             },
             {
                 name: "list_collections",
                 description: "List all collections in a specific database",
                 inputSchema: {
-                    type: "object",
+                    type: "object" as const,
                     properties: { db: { type: "string" } },
-                    required: ["db"]
-                }
+                    required: ["db"],
+                },
             },
 
             // INSERT
@@ -83,14 +88,14 @@ function createMcpServer() {
                 name: "insert_one",
                 description: "Insert one document into a collection",
                 inputSchema: {
-                    type: "object",
+                    type: "object" as const,
                     properties: {
                         db: { type: "string" },
                         collection: { type: "string" },
-                        document: { type: "object" }
+                        document: { type: "object" },
                     },
-                    required: ["db", "collection", "document"]
-                }
+                    required: ["db", "collection", "document"],
+                },
             },
 
             // UPDATE
@@ -98,15 +103,15 @@ function createMcpServer() {
                 name: "update_one",
                 description: "Update one document based on a filter",
                 inputSchema: {
-                    type: "object",
+                    type: "object" as const,
                     properties: {
                         db: { type: "string" },
                         collection: { type: "string" },
                         filter: { type: "object" },
-                        update: { type: "object" }
+                        update: { type: "object" },
                     },
-                    required: ["db", "collection", "filter", "update"]
-                }
+                    required: ["db", "collection", "filter", "update"],
+                },
             },
 
             // DELETE
@@ -114,14 +119,14 @@ function createMcpServer() {
                 name: "delete_one",
                 description: "Delete one document based on a filter",
                 inputSchema: {
-                    type: "object",
+                    type: "object" as const,
                     properties: {
                         db: { type: "string" },
                         collection: { type: "string" },
-                        filter: { type: "object" }
+                        filter: { type: "object" },
                     },
-                    required: ["db", "collection", "filter"]
-                }
+                    required: ["db", "collection", "filter"],
+                },
             },
 
             // AGGREGATE
@@ -129,19 +134,19 @@ function createMcpServer() {
                 name: "aggregate",
                 description: "Run a MongoDB aggregation pipeline",
                 inputSchema: {
-                    type: "object",
+                    type: "object" as const,
                     properties: {
                         db: { type: "string" },
                         collection: { type: "string" },
                         pipeline: {
                             type: "array",
-                            items: { type: "object" }
-                        }
+                            items: { type: "object" },
+                        },
                     },
-                    required: ["db", "collection", "pipeline"]
-                }
-            }
-        ]
+                    required: ["db", "collection", "pipeline"],
+                },
+            },
+        ],
     }));
 
     // ==========================
@@ -153,51 +158,62 @@ function createMcpServer() {
         try {
             await ensureConnection();
 
-            const database = args.db ? client.db(args.db) : null;
-            const col = args.collection ? database.collection(args.collection) : null;
+            const database = args?.db ? client.db(args.db as string) : null;
+            const col = args?.collection && database
+                ? database.collection(args.collection as string)
+                : null;
 
             if (name === "query_mongodb") {
-                const { query, projection, limit = 10 } = args;
-                const results = await col.find(query, { projection, maxTimeMS: 5000 }).limit(limit).toArray();
-                return { content: [{ type: "text", text: JSON.stringify(results, null, 2) }] };
+                const query = args?.query as Record<string, unknown>;
+                const projection = args?.projection as Record<string, unknown> | undefined;
+                const limit = (args?.limit as number) ?? 10;
+                const results = await col!.find(query, { projection, maxTimeMS: 5000 }).limit(limit).toArray();
+                return { content: [{ type: "text" as const, text: JSON.stringify(results, null, 2) }] };
             }
 
             if (name === "list_databases") {
                 const dbs = await client.db().admin().listDatabases();
-                return { content: [{ type: "text", text: JSON.stringify(dbs.databases.map(d => d.name), null, 2) }] };
+                return { content: [{ type: "text" as const, text: JSON.stringify(dbs.databases.map((d) => d.name), null, 2) }] };
             }
 
             if (name === "list_collections") {
-                const collections = await database.listCollections().toArray();
-                return { content: [{ type: "text", text: JSON.stringify(collections.map(c => c.name), null, 2) }] };
+                const collections = await database!.listCollections().toArray();
+                return { content: [{ type: "text" as const, text: JSON.stringify(collections.map((c) => c.name), null, 2) }] };
             }
 
             if (name === "insert_one") {
-                const result = await col.insertOne(args.document);
-                return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+                const result = await col!.insertOne(args?.document as Record<string, unknown>);
+                return { content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }] };
             }
 
             if (name === "update_one") {
-                const result = await col.updateOne(args.filter, args.update);
-                return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+                const result = await col!.updateOne(
+                    args?.filter as Record<string, unknown>,
+                    args?.update as Record<string, unknown>
+                );
+                return { content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }] };
             }
 
             if (name === "delete_one") {
-                const result = await col.deleteOne(args.filter);
-                return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+                const result = await col!.deleteOne(args?.filter as Record<string, unknown>);
+                return { content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }] };
             }
 
             if (name === "aggregate") {
-                const results = await col.aggregate(args.pipeline, { maxTimeMS: 5000 }).toArray();
-                return { content: [{ type: "text", text: JSON.stringify(results, null, 2) }] };
+                const results = await col!.aggregate(
+                    args?.pipeline as Record<string, unknown>[],
+                    { maxTimeMS: 5000 }
+                ).toArray();
+                return { content: [{ type: "text" as const, text: JSON.stringify(results, null, 2) }] };
             }
 
             throw new Error(`Unknown tool: ${name}`);
 
         } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
             return {
-                content: [{ type: "text", text: `Error: ${error.message}` }],
-                isError: true
+                content: [{ type: "text" as const, text: `Error: ${message}` }],
+                isError: true,
             };
         }
     });
@@ -209,7 +225,7 @@ function createMcpServer() {
 // STDIO MODE
 // Antigravity launches this server as a subprocess via file path
 // ==========================
-async function runStdio() {
+async function runStdio(): Promise<void> {
     const server = createMcpServer();
     const transport = new StdioServerTransport();
     await server.connect(transport);
@@ -221,28 +237,27 @@ async function runStdio() {
 // Server runs as a backend service, clients connect via localhost:PORT
 // Uses StreamableHTTPServerTransport (MCP SDK v1.x)
 // ==========================
-async function runHttp() {
+async function runHttp(): Promise<void> {
     const app = express();
     app.use(express.json());
 
     // Map to store transports per active session
     // Key: sessionId (UUID), Value: StreamableHTTPServerTransport instance
-    const transports = {};
+    const transports: Record<string, StreamableHTTPServerTransport> = {};
 
     // ============================================================
     // Main /mcp endpoint
     // Handles: POST (initialize + JSON-RPC messages) and GET (SSE stream)
     // ============================================================
-    app.all("/mcp", async (req, res) => {
+    app.all("/mcp", async (req: Request, res: Response) => {
 
         // --- Handle POST: initialize or client messages ---
         if (req.method === "POST") {
-            const sessionId = req.headers["mcp-session-id"];
+            const sessionId = req.headers["mcp-session-id"] as string | undefined;
 
             // If session exists → forward message to the correct transport
             if (sessionId && transports[sessionId]) {
-                const transport = transports[sessionId];
-                await transport.handleRequest(req, res, req.body);
+                await transports[sessionId].handleRequest(req, res, req.body);
                 return;
             }
 
@@ -252,11 +267,11 @@ async function runHttp() {
                 const server = createMcpServer();
                 const transport = new StreamableHTTPServerTransport({
                     sessionIdGenerator: () => randomUUID(),
-                    onsessioninitialized: (id) => {
+                    onsessioninitialized: (id: string) => {
                         // Save transport to map with its session ID
                         transports[id] = transport;
                         console.error(`[MCP] New session: ${id}`);
-                    }
+                    },
                 });
 
                 // Clean up map when session closes
@@ -279,7 +294,7 @@ async function runHttp() {
 
         // --- Handle GET: client wants to open SSE stream ---
         if (req.method === "GET") {
-            const sessionId = req.headers["mcp-session-id"];
+            const sessionId = req.headers["mcp-session-id"] as string | undefined;
 
             if (!sessionId || !transports[sessionId]) {
                 res.status(400).json({ error: "Session not found. Please initialize first." });
@@ -292,7 +307,7 @@ async function runHttp() {
 
         // --- Handle DELETE: client closes session ---
         if (req.method === "DELETE") {
-            const sessionId = req.headers["mcp-session-id"];
+            const sessionId = req.headers["mcp-session-id"] as string | undefined;
 
             if (sessionId && transports[sessionId]) {
                 await transports[sessionId].close();
@@ -308,12 +323,12 @@ async function runHttp() {
     });
 
     // Health check endpoint
-    app.get("/health", (req, res) => {
+    app.get("/health", (_req: Request, res: Response) => {
         res.json({
             status: "ok",
             mode: "http",
             version: "2.0.0",
-            activeSessions: Object.keys(transports).length
+            activeSessions: Object.keys(transports).length,
         });
     });
 

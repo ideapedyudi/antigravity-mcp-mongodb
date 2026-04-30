@@ -20,11 +20,18 @@ Tools available for AI:
 
 - **Node.js** v18+
 - **MongoDB** instance (local or remote)
+- **TypeScript** (installed automatically via `npm install`)
 
 ## Installation
 
 ```bash
 npm install
+```
+
+Build the TypeScript source:
+
+```bash
+npm run build
 ```
 
 Create a `.env` file in the root directory (you can copy `.env.example`):
@@ -52,6 +59,12 @@ PORT=3000
 
 This mode is used when Antigravity **directly launches** the server as a subprocess via file path. No need to run the server separately.
 
+Build the project first:
+
+```bash
+npm run build
+```
+
 ### MCP Configuration in Antigravity
 
 ```json
@@ -59,13 +72,13 @@ This mode is used when Antigravity **directly launches** the server as a subproc
   "mcpServers": {
     "mongodb-mcp": {
       "command": "node",
-      "args": ["D:/ideapedyudi/antigravity-mcp-mongodb/index.js"]
+      "args": ["D:/ideapedyudi/antigravity-mcp-mongodb/dist/index.js"]
     }
   }
 }
 ```
 
-> **Note:** Adjust the `args` path to the location of `index.js` on your computer (use forward slash `/` or double backslash `\\`).
+> **Note:** Adjust the `args` path to the location of the compiled `dist/index.js` on your computer (use forward slash `/` or double backslash `\\`).
 
 ---
 
@@ -76,11 +89,12 @@ This mode is suitable if you want to run the server as a **background service** 
 ### Run Server
 
 ```bash
-# Change MCP_MODE in .env to "http", then:
-npm run start:http
+# Development (no build needed, uses tsx)
+npm run dev:http
 
-# Or directly via environment variable:
-MCP_MODE=http node index.js
+# Production (build first, then run compiled output)
+npm run build
+npm run start:http
 ```
 
 The server will run at:
