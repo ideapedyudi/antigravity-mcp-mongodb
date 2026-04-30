@@ -1,57 +1,113 @@
 # Gemini MongoDB MCP Server
 
-This is a Model Context Protocol (MCP) server that provides a bridge between AI assistants (like Gemini via Antigravity) and your MongoDB databases. It allows the AI to securely and effectively interact with your MongoDB instance.
+MCP (Model Context Protocol) server that bridges AI assistants (like Gemini via Antigravity) with your MongoDB database. Supports two connection modes: **Stdio** (via file path) and **HTTP/SSE** (via `localhost:PORT`).
 
 ## Features
 
-This MCP server provides the following tools to the AI:
+Tools available for AI:
 
-- `list_databases`: Get a list of all databases available in the MongoDB instance.
-- `list_collections`: List all collections within a specific database.
-- `query_mongodb`: Find documents in a collection using standard MongoDB queries.
-- `insert_one`: Insert a new document into a collection.
-- `update_one`: Update an existing document based on a filter.
-- `delete_one`: Delete a document based on a filter.
-- `aggregate`: Run a MongoDB aggregation pipeline for complex data processing.
+| Tool | Description |
+|---|---|
+| `list_databases` | List all databases in MongoDB |
+| `list_collections` | List collections within a database |
+| `query_mongodb` | Find documents using MongoDB query |
+| `insert_one` | Insert a new document into a collection |
+| `update_one` | Update a document based on a filter |
+| `delete_one` | Delete a document based on a filter |
+| `aggregate` | Run an aggregation pipeline |
 
 ## Prerequisites
 
-- **Node.js** (v18 or higher recommended)
-- **MongoDB** instance running locally or remotely.
+- **Node.js** v18+
+- **MongoDB** instance (local or remote)
 
 ## Installation
 
-1. Clone or download this repository.
-2. Install the dependencies:
-   ```bash
-   npm install
-   ```
-3. Create a `.env` file in the root directory and add your MongoDB connection string:
-   ```env
-   MONGO_URI="mongodb://your-username:your-password@your-host:your-port/your-database"
-   ```
-   *If you don't provide a `.env` file, it will default to `mongodb://localhost:27017`.*
+```bash
+npm install
+```
 
-## Usage in Antigravity
+Create a `.env` file in the root directory (you can copy `.env.example`):
 
-To use this MCP server in Antigravity, you need to configure it in your Antigravity MCP settings.
+```bash
+cp .env.example .env
+```
 
-1. Open your Antigravity configuration file for MCP servers.
-2. Add the following configuration block:
+Or manually create `.env` with:
+
+```env
+# MongoDB Connection
+MONGO_URI=mongodb://localhost:27017
+
+# Mode: "stdio" (default) or "http" (backend service)
+MCP_MODE=stdio
+
+# Port for HTTP mode
+PORT=3000
+```
+
+---
+
+## Mode 1: Stdio (Default)
+
+This mode is used when Antigravity **directly launches** the server as a subprocess via file path. No need to run the server separately.
+
+### MCP Configuration in Antigravity
 
 ```json
 {
   "mcpServers": {
     "mongodb-mcp": {
       "command": "node",
-      "args": [
-        "path_file_to_indexjs"
-      ]
+      "args": ["D:/ideapedyudi/antigravity-mcp-mongodb/index.js"]
     }
   }
 }
 ```
 
-*Note: Make sure to adjust the path in `args` if your project directory is located elsewhere.*
+> **Note:** Adjust the `args` path to the location of `index.js` on your computer (use forward slash `/` or double backslash `\\`).
 
-Once configured, Antigravity will automatically launch this server when you start a conversation, giving Gemini the ability to read and write to your MongoDB databases directly!
+---
+
+## Mode 2: HTTP/SSE (Backend Service)
+
+This mode is suitable if you want to run the server as a **background service** (including via Docker), and then the MCP client connects via `localhost` + port. No need to include the file path in the MCP configuration.
+
+### Run Server
+
+```bash
+# Change MCP_MODE in .env to "http", then:
+npm run start:http
+
+# Or directly via environment variable:
+MCP_MODE=http node index.js
+```
+
+The server will run at:
+- `POST/GET/DELETE http://localhost:3000/mcp` → Main MCP endpoint (StreamableHTTP)
+- `GET http://localhost:3000/health`           → Health check
+
+### MCP Configuration in Antigravity (HTTP Mode)
+
+```json
+{
+  "mcpServers": {
+    "mongodb-mcp": {
+      "serverURL": "http://localhost:3000/mcp"
+    }
+  }
+}
+```
+
+> **Benefit of this mode:** No file path needed, can be accessed from anywhere (remote, Docker container, etc.), and the server stays alive independently.
+
+---
+
+## Mode Comparison
+
+| | Stdio Mode | HTTP/SSE Mode |
+|---|---|---|
+| **Connection Method** | File path to `index.js` | URL `localhost:PORT` |
+| **Server Lifecycle** | Managed by Antigravity | Managed by you |
+| **Suitable for** | Simple local use | Backend service, Docker, remote |
+| **Configuration** | `command` + `args` | `serverURL` |
