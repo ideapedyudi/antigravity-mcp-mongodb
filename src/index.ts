@@ -31,7 +31,7 @@ async function ensureConnection(): Promise<void> {
     if (!isConnected) {
         await client.connect();
         isConnected = true;
-        console.error("MongoDB connected");
+        console.log("MongoDB connected");
     }
 }
 
@@ -229,7 +229,7 @@ async function runStdio(): Promise<void> {
     const server = createMcpServer();
     const transport = new StdioServerTransport();
     await server.connect(transport);
-    console.error("MongoDB MCP Server v2 running [STDIO mode]");
+    console.log("MongoDB MCP Server running [STDIO mode]");
 }
 
 // ==========================
@@ -270,14 +270,14 @@ async function runHttp(): Promise<void> {
                     onsessioninitialized: (id: string) => {
                         // Save transport to map with its session ID
                         transports[id] = transport;
-                        console.error(`[MCP] New session: ${id}`);
+                        console.log(`[MCP] New session: ${id}`);
                     },
                 });
 
                 // Clean up map when session closes
                 transport.onclose = () => {
                     if (transport.sessionId) {
-                        console.error(`[MCP] Session closed: ${transport.sessionId}`);
+                        console.log(`[MCP] Session closed: ${transport.sessionId}`);
                         delete transports[transport.sessionId];
                     }
                 };
@@ -312,7 +312,7 @@ async function runHttp(): Promise<void> {
             if (sessionId && transports[sessionId]) {
                 await transports[sessionId].close();
                 delete transports[sessionId];
-                console.error(`[MCP] Session deleted: ${sessionId}`);
+                console.log(`[MCP] Session deleted: ${sessionId}`);
             }
 
             res.status(200).json({ ok: true });
@@ -333,9 +333,9 @@ async function runHttp(): Promise<void> {
     });
 
     app.listen(PORT, () => {
-        console.error(`MongoDB MCP Server v2 running [HTTP mode] → http://localhost:${PORT}`);
-        console.error(`  MCP endpoint  : http://localhost:${PORT}/mcp`);
-        console.error(`  Health check  : http://localhost:${PORT}/health`);
+        console.log(`MongoDB MCP Server running [HTTP mode] → http://localhost:${PORT}`);
+        console.log(`  MCP endpoint  : http://localhost:${PORT}/mcp`);
+        console.log(`  Health check  : http://localhost:${PORT}/health`);
     });
 }
 
@@ -343,7 +343,7 @@ async function runHttp(): Promise<void> {
 // ENTRY POINT
 // ==========================
 if (MCP_MODE === "http") {
-    runHttp().catch(console.error);
+    runHttp().catch(console.log);
 } else {
-    runStdio().catch(console.error);
+    runStdio().catch(console.log);
 }
