@@ -2,8 +2,9 @@ const { Server } = require("@modelcontextprotocol/sdk/server/index.js");
 const { StdioServerTransport } = require("@modelcontextprotocol/sdk/server/stdio.js");
 const { CallToolRequestSchema, ListToolsRequestSchema } = require("@modelcontextprotocol/sdk/types.js");
 const { MongoClient } = require("mongodb");
+require("dotenv").config();
 
-const MONGO_URI = "mongodb://localhost:27017";
+const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017";
 const client = new MongoClient(MONGO_URI);
 
 let isConnected = false;
