@@ -48,7 +48,7 @@ cp .env.example .env
 MONGO_URI=mongodb://mongodb:27017
 
 # Port for the MCP HTTP server
-PORT=3000
+PORT=3300
 ```
 
 **3. Build and run all services:**
@@ -70,7 +70,7 @@ docker compose ps
 docker compose logs -f mcp-server
 
 # Test health endpoint
-curl http://localhost:3000/health
+curl http://localhost:3300/health
 ```
 
 **5. Stop all services:**
@@ -101,9 +101,9 @@ docker build -t antigravity-mcp-server .
 ```bash
 docker run -d \
   --name antigravity-mcp-server \
-  -p 3000:3000 \
+  -p 3300:3300 \
   -e MONGO_URI="mongodb://host.docker.internal:27017" \
-  -e PORT=3000 \
+  -e PORT=3300 \
   --restart unless-stopped \
   antigravity-mcp-server
 ```
@@ -166,7 +166,7 @@ Or manually create `.env` with:
 MONGO_URI=mongodb://localhost:27017
 
 # Port for the MCP HTTP server
-PORT=3000
+PORT=3300
 ```
 
 ### Run Server
@@ -189,14 +189,14 @@ Regardless of how you run the server (Docker or local), add this to your Antigra
 {
   "mcpServers": {
     "mongodb-mcp": {
-      "serverURL": "http://localhost:3000/mcp"
+      "serverURL": "http://localhost:3300/mcp"
     }
   }
 }
 ```
 
 The server exposes:
-- `POST/GET/DELETE http://localhost:3000/mcp` → Main MCP endpoint (StreamableHTTP)
-- `GET http://localhost:3000/health`           → Health check
+- `POST/GET/DELETE http://localhost:3300/mcp` → Main MCP endpoint (StreamableHTTP)
+- `GET http://localhost:3300/health`           → Health check
 
 > **Benefit:** No file path needed, can be accessed from anywhere (remote, Docker container, etc.), and the server stays alive independently.

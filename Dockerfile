@@ -40,11 +40,11 @@ COPY --from=builder /app/dist ./dist
 
 # Port that will be exposed by the container
 # Adjust with the PORT environment variable value
-EXPOSE 3000
+EXPOSE 3300
 
 # Default environment variables
 # These values can be overridden when running the container with --env or docker-compose
-ENV PORT=3000
+ENV PORT=3300
 ENV MONGO_URI=mongodb://localhost:27017
 
 # Command to run the server (using the compiled JS file)

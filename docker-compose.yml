@@ -19,13 +19,13 @@ services:
     restart: unless-stopped
     ports:
       # Format: "HOST_PORT:CONTAINER_PORT"
-      # Access via http://localhost:3000/mcp
-      - "3000:3000"
+      # Access via http://localhost:3300/mcp
+      - "3300:3300"
     environment:
       # Use "mongodb" as the hostname because that is the name of the MongoDB service in this compose
       # If you have an external MongoDB (Atlas, etc.), change it here or via .env
       - MONGO_URI=${MONGO_URI:-mongodb://mongodb:27017}
-      - PORT=${PORT:-3000}
+      - PORT=${PORT:-3300}
     depends_on:
       # Wait for MongoDB to be ready before starting the MCP server
       mongodb:
