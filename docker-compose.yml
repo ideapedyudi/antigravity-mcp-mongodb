@@ -1,0 +1,72 @@
+# ============================================================
+# Docker Compose for Antigravity MongoDB MCP Server
+# Includes: MCP Server + MongoDB (optional if you don't have your own MongoDB)
+# ============================================================
+
+services:
+
+  # --------------------------------------------------------
+  # Service 1: MCP Server (Main Application)
+  # --------------------------------------------------------
+  mcp-server:
+    # Name of the image to be built from the Dockerfile in this directory
+    build:
+      context: .
+      dockerfile: Dockerfile
+    # Easily recognizable container name
+    container_name: antigravity-mcp-server
+    # Restart automatically if the container crashes (unless stopped manually)
+    restart: unless-stopped
+    ports:
+      # Format: "HOST_PORT:CONTAINER_PORT"
+      # Access via http://localhost:3000/mcp
+      - "3000:3000"
+    environment:
+      # Use "mongodb" as the hostname because that is the name of the MongoDB service in this compose
+      # If you have an external MongoDB (Atlas, etc.), change it here or via .env
+      - MONGO_URI=${MONGO_URI:-mongodb://mongodb:27017}
+      - PORT=${PORT:-3000}
+    depends_on:
+      # Wait for MongoDB to be ready before starting the MCP server
+      mongodb:
+        condition: service_healthy
+    networks:
+      - mcp-network
+
+  # --------------------------------------------------------
+  # Service 2: MongoDB (Database)
+  # Delete/comment this service if you already have your own MongoDB
+  # --------------------------------------------------------
+  mongodb:
+    image: mongo:7.0
+    container_name: antigravity-mongodb
+    restart: unless-stopped
+    ports:
+      # Accessible from host on port 27017 (for debugging using MongoDB Compass, etc.)
+      - "27017:27017"
+    volumes:
+      # MongoDB data will be stored permanently in a named volume (survives container restarts)
+      - mongodb-data:/data/db
+    networks:
+      - mcp-network
+    # Health check to ensure MongoDB is ready to accept connections
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+# ============================================================
+# Named Volumes: Persistent data managed by Docker
+# ============================================================
+volumes:
+  mongodb-data:
+    driver: local
+
+# ============================================================
+# Networks: Internal network between services
+# ============================================================
+networks:
+  mcp-network:
+    driver: bridge
