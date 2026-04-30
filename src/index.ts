@@ -1,5 +1,4 @@
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import {
     isInitializeRequest,
@@ -18,10 +17,6 @@ dotenv.config();
 // ==========================
 const MONGO_URI: string = process.env.MONGO_URI ?? "mongodb://localhost:27017";
 const PORT: number = parseInt(process.env.PORT ?? "3000", 10);
-
-// Mode: "stdio" (default, Antigravity uses file path)
-//       "http"  (backend service, connects via localhost:PORT)
-const MCP_MODE: string = process.env.MCP_MODE ?? "stdio";
 
 const client = new MongoClient(MONGO_URI);
 let isConnected = false;
@@ -222,17 +217,6 @@ function createMcpServer(): Server {
 }
 
 // ==========================
-// STDIO MODE
-// Antigravity launches this server as a subprocess via file path
-// ==========================
-async function runStdio(): Promise<void> {
-    const server = createMcpServer();
-    const transport = new StdioServerTransport();
-    await server.connect(transport);
-    console.log("MongoDB MCP Server running [STDIO mode]");
-}
-
-// ==========================
 // HTTP MODE (StreamableHTTP)
 // Server runs as a backend service, clients connect via localhost:PORT
 // Uses StreamableHTTPServerTransport (MCP SDK v1.x)
@@ -342,8 +326,4 @@ async function runHttp(): Promise<void> {
 // ==========================
 // ENTRY POINT
 // ==========================
-if (MCP_MODE === "http") {
-    runHttp().catch(console.log);
-} else {
-    runStdio().catch(console.log);
-}
+runHttp().catch(console.log);
